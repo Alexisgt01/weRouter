@@ -73,6 +73,7 @@ class Route
         }
     }
 
+
     /**
      * Check if request has params
      * @param string $request
@@ -83,7 +84,21 @@ class Route
         $uri      = explode('/', $this->uri);
         $request_ = explode('/', $request);
         preg_match_all($this->regex, $this->uri, $uri_);
-        return count($uri_[0]) > 0 && count($uri) === count($request_) ? $this->setParams($uri, $request_) : false;
+        if (count($uri_[0]) > 0 && count($uri) === count($request_) && $this->matchURL($uri, $request_)) {
+            return $this->setParams($uri, $request_);
+        }
+        return false;
+    }
+
+    private function matchURL($uri, $request)
+    {
+        foreach ($uri as $k => $v):
+            if (preg_match($this->regex, $v)) {
+                unset($uri[$k]);
+                unset($request[$k]);
+            }
+        endforeach;
+        return empty(array_diff($request, $uri));
     }
 
     /**

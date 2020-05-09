@@ -36,6 +36,10 @@ class Router
         return $route;
     }
 
+    /**
+     * Define controllers namespace
+     * @param string $namespace
+     */
     public static function setNamespace($namespace)
     {
         self::$namespace = $namespace;
