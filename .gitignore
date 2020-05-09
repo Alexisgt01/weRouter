@@ -1,4 +1,5 @@
 .idea
 vendor
 /*.php
-controllers
+/src/controllers
+.htaccess
