@@ -35,14 +35,22 @@ class Route
     private $regex_replace = "/[{}]/";
 
     /**
+     * GET | POST | PUT | DELETE
+     * @var string $method
+     */
+    private $method;
+
+    /**
      * Route constructor.
      * @param $uri string
      * @param $callable string | callable
+     * @param $method string
      */
-    public function __construct($uri, $callable)
+    public function __construct($uri, $callable, $method)
     {
         $this->uri      = trim($uri, '/');
         $this->callable = $callable;
+        $this->method   = $method;
     }
 
     /**
@@ -62,14 +70,27 @@ class Route
     /**
      * Matching statement
      * @param string $request
+     * @param $request_method
      * @return bool
      */
-    public function matched($request)
+    public function matched($request, $request_method)
     {
-        if ($p = $this->hasParams($request)) {
-            return $p;
+        if ($request_method === $this->method && $this->matchURL($request)) {
+            if ($this->method === 'POST') {
+                return $this->hasPosts($request);
+            } elseif ($this->method === 'GET') {
+                if ($p = $this->hasParams($request)) {
+                    return $p;
+                } else {
+                    return $this->uri === $request;
+                }
+            } elseif ($this->method === 'DELETE') {
+                return false;
+            } else {
+                return false;
+            }
         } else {
-            return $this->uri === $request;
+            return false;
         }
     }
 
@@ -81,36 +102,48 @@ class Route
      */
     private function hasParams($request)
     {
-        $uri      = explode('/', $this->uri);
-        $request_ = explode('/', $request);
         preg_match_all($this->regex, $this->uri, $uri_);
-        if (count($uri_[0]) > 0 && count($uri) === count($request_) && $this->matchURL($uri, $request_)) {
-            return $this->setParams($uri, $request_);
+
+        if (count($uri_[0]) !== 0) {
+            return $this->setParams($request);
         }
         return false;
     }
 
-    private function matchURL($uri, $request)
+    /**
+     * Check if request === uri
+     * @param $request
+     * @return bool
+     */
+    private function matchURL($request)
     {
+        $uri      = explode('/', $this->uri);
+        $request_ = explode('/', $request);
+
+        if (count($uri) !== count($request_)) {
+            return false;
+        }
+
         foreach ($uri as $k => $v):
             if (preg_match($this->regex, $v)) {
                 unset($uri[$k]);
-                unset($request[$k]);
+                unset($request_[$k]);
             }
         endforeach;
-        return empty(array_diff($request, $uri));
+        return empty(array_diff($request_, $uri));
     }
 
     /**
-     * @param array $uri
-     * @param array $request
+     * @param string $request
      * @return bool
      */
-    private function setParams($uri, $request)
+    private function setParams($request)
     {
+        $uri      = explode('/', $this->uri);
+        $request_ = explode('/', $request);
         foreach ($uri as $k => $v):
             if (preg_match($this->regex, $v)) {
-                $this->params[preg_replace($this->regex_replace, '', $v)] = $request[$k];
+                $this->params[preg_replace($this->regex_replace, '', $v)] = $request_[$k];
             }
         endforeach;
         return true;
@@ -126,6 +159,26 @@ class Route
         $func = explode('@', $this->callable)[1];
         $c    = new $name();
         !empty($this->params) ? $c->$func($this->params) : $c->$func();
+    }
+
+    /**
+     * check if post and set $this->params
+     * @param $request
+     * @return bool
+     */
+    private function hasPosts($request)
+    {
+        if (!empty($_POST)) {
+            if ($p = $this->hasParams($request)) {
+                foreach ($_POST as $key => $post) {
+                    $this->params[$key] = $post;
+                }
+            } else {
+                $this->params = $_POST;
+            }
+            return true;
+        }
+        return false;
     }
 
 

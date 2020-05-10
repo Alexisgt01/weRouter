@@ -6,34 +6,48 @@ class Router
 {
     /**
      * All instance of Route
-     * @var array
+     * @var array $routes
      */
     public static $routes = [];
 
     /**
      * REQUEST_URI
-     * @var string
+     * @var string $request
      */
     public static $request;
 
     /**
      * Controller namespace
-     * @var string
+     * @var string $namespace
      */
     public static $namespace;
 
     /**
-     * Instanced Route
+     * GET | POST | DELETE | PUT
+     * @var string $request_method
+     */
+    public static $request_method;
+
+    /**
+     * Get method
      * @param string $uri
      * @param string|callable $callable
      * @return Route
      */
     public static function get($uri, $callable)
     {
-        $route          = new Route($uri, $callable);
-        self::$routes[] = $route;
-        self::$request  = trim($_SERVER['REQUEST_URI'], '/');
-        return $route;
+        return self::init($uri, $callable, 'GET');
+    }
+
+    /**
+     * Post method
+     * @param string $uri
+     * @param string|callable $callable
+     * @return Route
+     */
+    public static function post($uri, $callable)
+    {
+        return self::init($uri, $callable, 'POST');
     }
 
     /**
@@ -59,13 +73,29 @@ class Router
     private static function match()
     {
         foreach (self::$routes as $route) {
-            if ($route->matched(self::$request)) {
-                return $route->dispatch(self::$namespace);
+            if ($route->matched(self::$request, self::$request_method)) {
+                $route->dispatch(self::$namespace);
             }
         }
         // THROW
         http_response_code(404);
         exit;
+    }
+
+    /**
+     * Init new Route
+     * @param string $uri
+     * @param string|callable $callable
+     * @param string $method
+     * @return Route
+     */
+    private static function init($uri, $callable, $method)
+    {
+        $route                = new Route($uri, $callable, $method);
+        self::$routes[]       = $route;
+        self::$request        = trim($_SERVER['REQUEST_URI'], '/');
+        self::$request_method = $_SERVER['REQUEST_METHOD'];
+        return $route;
     }
 
 }
