@@ -1,3 +1,7 @@
+# weRouter
+
+``composer require alexisgt01/we-router --dev``
+
 ```
 // router.php
 

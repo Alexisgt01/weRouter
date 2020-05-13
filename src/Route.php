@@ -75,6 +75,7 @@ class Route
      */
     public function matched($request, $request_method)
     {
+
         if ($request_method === $this->method && $this->matchURL($request)) {
             if ($this->method === 'POST') {
                 return $this->hasPosts($request);
